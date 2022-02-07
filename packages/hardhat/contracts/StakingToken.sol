@@ -74,6 +74,29 @@ contract StakingToken is ERC20, Ownable {
     */
     mapping(address => uint256) internal stakes;
 
+    enum LoanState {
+        DUMMY_DO_NOT_USE,
+        Created,
+        Active,
+        Repaid,
+        Defaulted
+    }
+
+    struct LoanData {
+        LoanState loanState;
+        // The number of seconds representing relative due date of the loan
+        uint256 durationSecs;
+        // The amount of principal in terms of the payableCurrency
+        uint256 principal;
+        // The amount of repayment in terms of the payableCurrency
+        uint256 repayment;
+        // The tokenID of the NFT
+        string nftTokenId;
+        // The payable currency for the loan principal and interest
+        address payableCurrency;
+    }
+    LoanData[] loadData;
+
     /**
     * @notice A method to retrieve the stake for a stakeholder.
     * @param _stakeholder The stakeholder to retrieve the stake for.
@@ -128,4 +151,105 @@ contract StakingToken is ERC20, Ownable {
         if (stakes[msg.sender] == 0) removeStakeholder(msg.sender);
         _mint(msg.sender, _stake);
     }
+    
+    function executeSetIfSignatureMatch(
+        uint8 v,
+        bytes32 r,
+        bytes32 s,
+        address sender,
+        uint256 deadline,
+        uint x
+    ) external {
+        require(block.timestamp < deadline, "Signed transaction expired");
+
+        uint chainId;
+        assembly {
+            chainId := chainid
+        }
+        bytes32 eip712DomainHash = keccak256(
+            abi.encode(
+                keccak256(
+                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                ),
+                keccak256(bytes("SetTest")),
+                keccak256(bytes("1")),
+                chainId,
+                address(this)
+            )
+        );  
+
+        bytes32 hashStruct = keccak256(
+        abi.encode(
+            keccak256("set(address sender,uint x,uint deadline)"),
+            sender,
+            x,
+            deadline
+            )
+        );
+
+        bytes32 hash = keccak256(abi.encodePacked("\x19\x01", eip712DomainHash, hashStruct));
+        address signer = ecrecover(hash, v, r, s);
+        require(signer == sender, "MyFunction: invalid signature");
+        require(signer != address(0), "ECDSA: invalid signature");
+
+        set(x);
+    }
 }
+
+
+
+
+const domain = [
+    { name: "name", type: "string" },
+    { name: "version", type: "string" },
+    { name: "chainId", type: "uint256" },
+    { name: "verifyingContract", type: "address" },
+    // { name: "salt", type: "bytes32" },
+];
+// const bid = [
+//     { name: "amount", type: "uint256" },
+//     { name: "bidder", type: "Identity" },
+// ];
+// const identity = [
+//     { name: "userId", type: "uint256" },
+//     { name: "wallet", type: "address" },
+// ];
+const set = [
+    { name: "borrower", type: "address" },
+    { name: "principal", type: "uint" },
+    { name: "repayment", type: "uint" },
+    { name: "currency", type: "address" },
+    { name: "deadline", type: "uint" },
+    { name: "nft", type: "address" },
+];
+const domainData = {
+    name: "CuterDAO",
+    version: "1",
+    chainId: "1",    // ethers 可以拿到再放進來
+    verifyingContract: "0x3333333333333333333333333333333333333333",
+    // salt: "0xf2d857f4a3edcb9b78b4d503bfe733db1e3f6cdc2b7971ee739626c97e86a558"
+};
+const setData = {
+    borrower: "0x3333333333333333333333333333333333333333",    // 借款的錢包地址
+    principal: 100,    // 借多少
+    repayment: 105,  // 還多少
+    currency: "0x3333333333333333333333333333333333333333",    // 借款 token address
+    deadline: 12345678,    // 還款時間
+    nft: "0x3333333333333333333333333333333333333333",    // NFT token ID
+}
+var message = {
+    amount: 100,    // 借多少
+    wallet: "0x3333333333333333333333333333333333333333",    // 借款的錢包地址
+    nft: "0x3333333333333333333333333333333333333333",    // NFT token ID
+};
+const data = JSON.stringify({
+    types: {
+        EIP712Domain: domain,
+        // Bid: bid,
+        // Identity: identity,
+        set: set
+    },
+    domain: domainData,
+    primaryType: "set",
+    message: message
+});
