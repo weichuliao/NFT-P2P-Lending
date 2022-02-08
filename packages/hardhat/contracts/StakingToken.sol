@@ -5,160 +5,200 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "./Lender.sol";
-import "./Borrower.sol";
 
 contract StakingToken is ERC20, Ownable {
    using SafeMath for uint256;
 
    /**
     * @notice The constructor for the Staking Token.
-    * @param _owner The address to receive all tokens on construction.
-    * @param _supply The amount of tokens to mint on construction.
     */
-   constructor(address _owner, uint256 _supply)
+    constructor()
        public
-   {
-       _mint(_owner, _supply);
-   }
-
-    /**
-    * @notice We usually require to know who are all the stakeholders.
-    */
-    address[] internal stakeholders;
-    
-    /**
-    * @notice A method to check if an address is a stakeholder.
-    * @param _address The address to verify.
-    * @return bool, uint256 Whether the address is a stakeholder,
-    * and if so its position in the stakeholders array.
-    */
-    function isStakeholder(address _address) 
-        public
-        view
-        returns (bool, uint)
     {
-        for (uint i = 0; i < stakeholders.length; i++) {
-            if (_address == stakeholders[i]) return (true, i);
-        }
-        return (false, 0);
+        
     }
 
     /**
-    * @notice A method to add a stakeholder.
-    * @param _stakeholder The stakeholder to add.
+    * @notice Enum describing the current state of a loan
+    * DUMMY_DO_NOT_USE: We need a default that is not 'Created' - this is the zero value
+    * CREATED: The loan data is stored, but not initiated yet.
+    * REMOVED: The created loan was removed.
+    * ACTIVE: The loan has been initialized, funds have been delivered to the borrower and the collateral is held.
+    * REPAID: The loan has been repaid, and the collateral has been returned to the borrower. This is a terminal state.
+    * DEFAULTED: The loan was delinquent and collateral claimed by the lender. This is a terminal state.
     */
-    function addStakeholder(address _stakeholder) 
-        public
-    {
-        (bool _isStakeholder, ) = isStakeholder(_stakeholder);
-        if (!_isStakeholder) stakeholders.push(_stakeholder);
-    }
-
-    /**
-    * @notice A method to remove a stakeholder.
-    * @param _stakeholder The stakeholder to remove.
-    */
-    function removeStakeholder(address _stakeholder)
-        public
-    {
-        (bool _isStakeholder, uint i) = isStakeholder(_stakeholder);
-        if (_isStakeholder) {
-            stakeholders[i] = stakeholders[stakeholders.length - 1];
-            stakeholders.pop();
-        }
-    }
-
-    /**
-    * @notice The stakes for each stakeholder.
-    */
-    mapping(address => uint256) internal stakes;
-
-    enum LoanState {
+    enum LoanStatus {
         DUMMY_DO_NOT_USE,
-        Created,
-        Active,
-        Repaid,
-        Defaulted
+        CREATED,
+        REMOVED,
+        ACTIVE,
+        REPAID,
+        DEFAULTED
     }
 
+    /**
+    * @notice Struct describing the content of a loan
+    */
     struct LoanData {
-        LoanState loanState;
+        // The current state of a loan
+        LoanStatus loanState;
+        // The wallet address of the borrower
+        address borrower;
+        // The wallet address of the lender
+        address lender;
         // The number of seconds representing relative due date of the loan
-        uint256 durationSecs;
+        uint256 deadline;
+        // The payable currency for the loan principal and interest
+        address payableCurrency;
         // The amount of principal in terms of the payableCurrency
         uint256 principal;
         // The amount of repayment in terms of the payableCurrency
         uint256 repayment;
-        // The tokenID of the NFT
-        string nftTokenId;
-        // The payable currency for the loan principal and interest
-        address payableCurrency;
-    }
-    LoanData[] loadData;
-
-    /**
-    * @notice A method to retrieve the stake for a stakeholder.
-    * @param _stakeholder The stakeholder to retrieve the stake for.
-    * @return uint256 The amount of wei staked.
-    */
-    function stakeOf(address _stakeholder)
-        public
-        view
-        returns (uint)
-    {
-        return stakes[_stakeholder];
+        // The token of the NFT
+        address nftToken;
     }
 
     /**
-    * @notice A method to the aggregated stakes from all stakeholders.
-    * @return uint256 The aggregated stakes from all stakeholders.
+    * @notice An array storing all the loans on the contract
     */
-    function totalStakes()
-        public
+    LoanData[] loans;
+
+    /**
+    * @notice recording the borrower of a loan
+    */
+    mapping (uint => address) loanToBorrower;
+
+    /**
+    * @notice recording the lender of a loan
+    */
+    mapping (uint => address) loanToLender;
+
+    /**
+    * @notice collecting the total number of a borrower's loans
+    */
+    mapping (address => uint) countOfBorrowerLoan;
+    /**
+    * @notice collecting the total number of a borrower's loans
+    */
+    mapping (address => uint) countOfLenderLoan;
+
+    /**
+    * @notice A method to retrieve the CREATED and ACTIVE loans of a borrower.
+    * @param _borrower The borrower to retrieve the loan for.
+    * @return An array of the IDs of a borrower's loans.
+    */
+    function getLoansOf(address _borrower)
+        external
         view
-        returns (uint)
+        returns (uint[] memory)
     {
-        uint _totalStakes = 0;
-        for (uint i = 0; i < stakeholders.length; i++) {
-            _totalStakes = _totalStakes.add(stakes[stakeholders[i]]);
+        uint[] memory result = new uint[](countOfBorrowerLoan[_borrower]);
+        uint counter = 0;
+        for (uint i = 0; i < loans.length; i++) {
+            if (loans[i] == _borrower &&
+                (loans[i].LoanStatus == LoanStatus.CREATED || loans[i].LoanStatus == LoanStatus.ACTIVE)) {
+                result[counter] = i;
+                counter++;
+            }
         }
-        return _totalStakes;
+        return result;
     }
 
     /**
-    * @notice A method for a stakeholder to create a stake.
-    *         Please note that _burn will revert if the user tries to stake more tokens than he owns.
-    * @param _stake The size of the stake to be created.
+    * @notice A method to retrieve the details of a loan.
+    * @dev The loan ID can be retrieved from the function getLoansOf().
+    * @param _loanID The ID of a loan.
+    * @return The detailed data of a loan.
     */
-    function createStake(uint _stake)
-        public
+    function getDetailedLoan(uint _loanID)
+        external
+        view
+        returns (LoanData)
     {
-        _burn(msg.sender, _stake);
-        if (stakes[msg.sender] == 0) addStakeholder(msg.sender);
-        stakes[msg.sender] = stakes[msg.sender].add(_stake);
+        require(loans[_loanID].LoanStatus != LoanStatus.REMOVED, "The loan was removed.");
+        return loans[_loanID];
     }
 
     /**
-    * @notice A method for a stakeholder to remove a stake.
-    *         The update of the stakes mapping will revert if there is an attempt to remove more tokens that were staked.
-    * @param _stake The size of the stake to be removed.
+    * @notice An event of creating a new loan.
     */
-    function removeStake(uint _stake)
+    event NewLoan(uint ID, address nftToken);
+
+    /**
+    * @notice A method for a borrower to create a loan.
+    * @param _parameter Please refer to the struct of Loan.
+    * @return A boolean to indicate the success or failure of loan creation.
+    */
+    function createLoan(address _borrower, uint256 _deadline, address _payableCurrency, uint256 _principal, uint256 _repayment, address nftToken)
         public
     {
-        stakes[msg.sender] = stakes[msg.sender].sub(_stake);
-        if (stakes[msg.sender] == 0) removeStakeholder(msg.sender);
-        _mint(msg.sender, _stake);
+        uint ID = loans.push(Loan(_borrower, address(0), _deadline, _payableCurrency, _principal, _repayment, nftToken));
+        loanToBorrower[id] = msg.sender;
+        countOfBorrowerLoan[msg.sender]++;
+        emit NewLoan(ID, nftToken);
+    }
+
+    /**
+    * @notice A method for a stakeholder to remove a created loan.
+    * @param _loanID The loan chosen to be removed.
+    */
+    function removeLoan(uint _loanID)
+        public
+    {
+        require(loanToBorrowe[_loanID] == msg.sender, "The loan does NOT exist.");
+        loans[_loanID].LoanStatus = LoanStatus.REMOVED;
+        countOfBorrowerLoan[msg.sender]--;
+    }
+
+    /**
+    * @notice
+    * @param _loanID The loan chosen to be dealed.
+    */
+    function dealLoan(uint _loanID)
+        public
+    {
+        require(loanToBorrower[_loanID] != msg.sender, "You cannot make a deal with your own loan.");
+        loans[_loanID].LoanStatus = LoanStatus.ACTIVE;
+        loans[_loanID].lender = msg.sender;
+        loanToLender[_loanID] = msg.sender;
+        countOfLenderLoan[msg.sender]++;
+        address borrower = loans[_loanID].borrower;
+        // TODO: transfer principal (ETH or USDT) from lender to borrower
+    }
+
+    /**
+    * @notice A method for a borrower to repay his/her loan.
+    * @param _loanID The loan chosen to be repaid.
+    */
+    function repayLoan(uint _loanID)
+        public
+    {
+        require(loanToBorrower[_loanID] == msg.sender, "You cannot repay other's loan.");
+        loans[_loanID].LoanStatus = LoanStatus.REPAID;
+        address lender = loans[_loanID].lender;
+        // TODO: transfer repayment (ETH or USDT) from borrower to lender
+    }
+
+    /**
+    * @notice A method for a lender to claim the collateral.
+    * @param 
+    */
+    function claimCollateral()
+        public
+    {
+        // TODO: lender claims borrower's NFT collateral when deadline met
     }
     
     function executeSetIfSignatureMatch(
         uint8 v,
         bytes32 r,
         bytes32 s,
-        address sender,
+        address borrower,
+        uint256 principal,
+        uint256 repayment,
+        address currency,
         uint256 deadline,
-        uint x
+        address nft
     ) external {
         require(block.timestamp < deadline, "Signed transaction expired");
 
@@ -171,7 +211,7 @@ contract StakingToken is ERC20, Ownable {
                 keccak256(
                     "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
                 ),
-                keccak256(bytes("SetTest")),
+                keccak256(bytes("CuterDAO")),
                 keccak256(bytes("1")),
                 chainId,
                 address(this)
@@ -179,77 +219,20 @@ contract StakingToken is ERC20, Ownable {
         );  
 
         bytes32 hashStruct = keccak256(
-        abi.encode(
-            keccak256("set(address sender,uint x,uint deadline)"),
-            sender,
-            x,
-            deadline
+            abi.encode(
+                keccak256("set(address borrower,uint principal,uint repayment,address currency,uint deadline,address nft)"),
+                borrower,
+                principal,
+                repayment,
+                currency,
+                deadline,
+                nft
             )
         );
 
         bytes32 hash = keccak256(abi.encodePacked("\x19\x01", eip712DomainHash, hashStruct));
         address signer = ecrecover(hash, v, r, s);
-        require(signer == sender, "MyFunction: invalid signature");
+        require(signer == borrower, "MyFunction: invalid signature");
         require(signer != address(0), "ECDSA: invalid signature");
-
-        set(x);
     }
 }
-
-
-
-
-const domain = [
-    { name: "name", type: "string" },
-    { name: "version", type: "string" },
-    { name: "chainId", type: "uint256" },
-    { name: "verifyingContract", type: "address" },
-    // { name: "salt", type: "bytes32" },
-];
-// const bid = [
-//     { name: "amount", type: "uint256" },
-//     { name: "bidder", type: "Identity" },
-// ];
-// const identity = [
-//     { name: "userId", type: "uint256" },
-//     { name: "wallet", type: "address" },
-// ];
-const set = [
-    { name: "borrower", type: "address" },
-    { name: "principal", type: "uint" },
-    { name: "repayment", type: "uint" },
-    { name: "currency", type: "address" },
-    { name: "deadline", type: "uint" },
-    { name: "nft", type: "address" },
-];
-const domainData = {
-    name: "CuterDAO",
-    version: "1",
-    chainId: "1",    // ethers 可以拿到再放進來
-    verifyingContract: "0x3333333333333333333333333333333333333333",
-    // salt: "0xf2d857f4a3edcb9b78b4d503bfe733db1e3f6cdc2b7971ee739626c97e86a558"
-};
-const setData = {
-    borrower: "0x3333333333333333333333333333333333333333",    // 借款的錢包地址
-    principal: 100,    // 借多少
-    repayment: 105,  // 還多少
-    currency: "0x3333333333333333333333333333333333333333",    // 借款 token address
-    deadline: 12345678,    // 還款時間
-    nft: "0x3333333333333333333333333333333333333333",    // NFT token ID
-}
-var message = {
-    amount: 100,    // 借多少
-    wallet: "0x3333333333333333333333333333333333333333",    // 借款的錢包地址
-    nft: "0x3333333333333333333333333333333333333333",    // NFT token ID
-};
-const data = JSON.stringify({
-    types: {
-        EIP712Domain: domain,
-        // Bid: bid,
-        // Identity: identity,
-        set: set
-    },
-    domain: domainData,
-    primaryType: "set",
-    message: message
-});
