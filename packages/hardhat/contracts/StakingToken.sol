@@ -3,6 +3,7 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
@@ -54,8 +55,10 @@ contract StakingToken is ERC20, Ownable {
         uint256 principal;
         // The amount of repayment in terms of the payableCurrency
         uint256 repayment;
-        // The token of the NFT
-        address nftToken;
+        // The token address of the NFT
+        address nftTokenAddress;
+        // NFT token ID
+        uint256 nftTokenID;
     }
 
     /**
@@ -122,21 +125,37 @@ contract StakingToken is ERC20, Ownable {
     /**
     * @notice An event of creating a new loan.
     */
-    event NewLoan(uint ID, address nftToken);
+    event NewLoan(uint ID, address nftTokenAddress, uint256 nftTokenID);
 
     /**
     * @notice A method for a borrower to create a loan.
     * @param _parameter Please refer to the struct of Loan.
-    * @return A boolean to indicate the success or failure of loan creation.
+    * @return The ID of the loan created.
     */
-    function createLoan(address _borrower, uint256 _deadline, address _payableCurrency, uint256 _principal, uint256 _repayment, address nftToken)
-        public
-    {
-        uint ID = loans.push(Loan(_borrower, address(0), _deadline, _payableCurrency, _principal, _repayment, nftToken));
-        loanToBorrower[id] = msg.sender;
+    function createLoan(
+        address _borrower, 
+        uint256 _deadline, 
+        address _payableCurrency, 
+        uint256 _principal, 
+        uint256 _repayment, 
+        address _nftTokenAddress,
+        uint256 _nftTokenID
+    ) public {
+        // transfer NFT to contract
+        IERC721(_nftTokenAddress).transferFrom(_borrower, address(this), _nftTokenID);
+
+        uint _loanID = loans.push(Loan(LoanStatus.CREATED, _borrower, address(0), _deadline, _payableCurrency, _principal, _repayment, _nftTokenAddress, _nftTokenID));
+        loanToBorrower[_loanID] = msg.sender;
         countOfBorrowerLoan[msg.sender]++;
-        emit NewLoan(ID, nftToken);
+
+        emit NewLoan(_loanID, _nftTokenAddress, _nftTokenID);
+        return _loanID;
     }
+
+    /**
+    * @notice An event of removing an existing loan.
+    */
+    event LoanRemoved(uint _loanID);
 
     /**
     * @notice A method for a stakeholder to remove a created loan.
@@ -148,7 +167,13 @@ contract StakingToken is ERC20, Ownable {
         require(loanToBorrowe[_loanID] == msg.sender, "The loan does NOT exist.");
         loans[_loanID].LoanStatus = LoanStatus.REMOVED;
         countOfBorrowerLoan[msg.sender]--;
+        emit LoanRemoved(_loanID);
     }
+
+    /**
+    * @notice An event of dealing an existing loan.
+    */
+    event LoanDealed(uint _loanID);
 
     /**
     * @notice
@@ -158,13 +183,26 @@ contract StakingToken is ERC20, Ownable {
         public
     {
         require(loanToBorrower[_loanID] != msg.sender, "You cannot make a deal with your own loan.");
-        loans[_loanID].LoanStatus = LoanStatus.ACTIVE;
+
+        // The lender sends the principal to the borrower.
+        // TODO: how to send USDT?
+        (bool sent, ) = payable(loans[_loanID].borrower).call{ value: (loans[_loanID].principal) }("");
+        require(sent, "Failed to make a deal of the loan.");
+
         loans[_loanID].lender = msg.sender;
         loanToLender[_loanID] = msg.sender;
         countOfLenderLoan[msg.sender]++;
-        address borrower = loans[_loanID].borrower;
-        // TODO: transfer principal (ETH or USDT) from lender to borrower
+
+        // Set the loan status to ACTIVE.
+        loans[_loanID].LoanStatus = LoanStatus.ACTIVE;
+
+        emit LoanDealed(_loanID);
     }
+
+    /**
+    * @notice An event of repaying an existing loan.
+    */
+    event LoanRepaid(uint _loanID);
 
     /**
     * @notice A method for a borrower to repay his/her loan.
@@ -173,22 +211,44 @@ contract StakingToken is ERC20, Ownable {
     function repayLoan(uint _loanID)
         public
     {
+        // No one but the borrower can repay his/her loan.
         require(loanToBorrower[_loanID] == msg.sender, "You cannot repay other's loan.");
+
+        // TODO: how to send USDT?
+        LoanData memory loan = loans[_loanID];
+        (bool sent, ) = payable(loan.lender).call{ value: (loan.principal) }("");
+        require(sent, "Failed to repay the loan.");
+
+        // transfer NFT (from contract) back to the borrower.
+        IERC721(loan.nftTokenAddress).transferFrom(address(this), loan.borrower, loan.nftTokenID);
+
+        // change the loan status to REPAID (a terminal state).
         loans[_loanID].LoanStatus = LoanStatus.REPAID;
-        address lender = loans[_loanID].lender;
-        // TODO: transfer repayment (ETH or USDT) from borrower to lender
+
+        emit LoanRepaid(_loanID);
     }
+
+    /**
+    * @notice An event of claiming borrower's collateral.
+    */
+    event collateralClaimed(uint _loanID);
 
     /**
     * @notice A method for a lender to claim the collateral.
     * @param 
     */
-    function claimCollateral()
+    function claimCollateral(uint _loanID)
         public
     {
-        // TODO: lender claims borrower's NFT collateral when deadline met
+        // TODO: check the deadline is expired.
+        LoanData memory loan = loans[_loanID];
+        IERC721(loan.nftTokenAddress).transferFrom(loan.borrower, loan.lender, loan.nftTokenID);
+        emit collateralClaimed(_loanID);
     }
     
+    /**
+    * @notice This method is pending. DO NOT USE.
+    */
     function executeSetIfSignatureMatch(
         uint8 v,
         bytes32 r,
