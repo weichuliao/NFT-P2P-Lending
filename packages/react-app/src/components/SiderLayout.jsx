@@ -4,6 +4,8 @@ import { Layout, Menu, PageHeader } from "antd";
 import { DesktopOutlined, PieChartOutlined } from "@ant-design/icons";
 import "antd/dist/antd.css";
 
+// 不重要
+
 const SiderMenu = ({ extra, children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const onCollapse = collapsed => {
@@ -29,6 +31,7 @@ const SiderMenu = ({ extra, children }) => {
         </div>
         <Menu theme="light" defaultSelectedKeys={["1"]} mode="inline">
           <Menu.Item key="1" icon={<PieChartOutlined />}>
+            {/* Link to={} 做的事情是 react-router-dom 的 route path 轉換 */}
             <Link to={"/"}>MyWallet</Link>
           </Menu.Item>
           <Menu.Item key="2" icon={<DesktopOutlined />}>
@@ -43,7 +46,7 @@ const SiderMenu = ({ extra, children }) => {
           extra={extra}
         />
         <Layout.Content style={{ margin: "16px" }}>{children}</Layout.Content>
-        <Layout.Footer style={{ textAlign: "center" }}>©2022 Created by XXX_</Layout.Footer>
+        <Layout.Footer style={{ textAlign: "center" }}>©2022 Created by CuterDAO</Layout.Footer>
       </Layout>
     </Layout>
   );
