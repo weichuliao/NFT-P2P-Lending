@@ -2,6 +2,7 @@
 
 > 使用 VScode editor 對元件或 function 按右鍵能快速查找 Definition 跟 References，
 > 能夠快速理解彼此的對應關係。
+<img width="1440" alt="截圖 2022-02-15 下午10 41 18" src="https://user-images.githubusercontent.com/73696750/154172446-9ac1ed64-4318-4675-a8c8-0eb2b69bcd15.png">
 
 UI: （建議看的順序）
 
@@ -97,3 +98,4 @@ yarn deploy
 ### 5. 打開 localhost:3000 ，成功跑起來了！
 
 - but call function error
+<img width="1440" alt="截圖 2022-02-15 下午11 16 48" src="https://user-images.githubusercontent.com/73696750/154172413-57be4334-fc95-4080-b2e8-7d5b7e80c726.png">
