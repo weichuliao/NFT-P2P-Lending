@@ -66,6 +66,12 @@ module.exports = {
   networks: {
     localhost: {
       url: "http://localhost:8545",
+      chainId: 31337,
+      accounts: {
+        mnemonic: mnemonic(),
+      },
+      gas: 2100000,
+      gasPrice: 8000000000,
       /*      
         notice no mnemonic here? it will just use account 0 of the hardhat node to deploy
         (you can put in a mnemonic here to set the deployer locally)
@@ -100,13 +106,15 @@ module.exports = {
     // },
 
     rinkeby: {
-      url: "https://rinkeby.infura.io/v3/460f40a260564ac4a4f4b3fffb032dad", // <---- YOUR INFURA ID! (or it won't work)
+      url: "https://rinkeby.infura.io/v3/70a64a2e0ae24663ae45232822916abd", // <---- YOUR INFURA ID! (or it won't work)
 
       //    url: "https://speedy-nodes-nyc.moralis.io/XXXXXXXXXXXXXXXXXXXXXXX/eth/rinkeby", // <---- YOUR MORALIS ID! (not limited to infura)
 
       accounts: {
         mnemonic: mnemonic(),
       },
+      gas: 2100000,
+      gasPrice: 8000000000,
     },
     kovan: {
       url: "https://kovan.infura.io/v3/460f40a260564ac4a4f4b3fffb032dad", // <---- YOUR INFURA ID! (or it won't work)

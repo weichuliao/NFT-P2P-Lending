@@ -7,10 +7,9 @@ import {
   useOnBlock,
   useUserProviderAndSigner,
 } from "eth-hooks";
-import { useContract, useContractWrite } from "wagmi";
 import { useExchangeEthPrice } from "eth-hooks/dapps/dex";
 import React, { useCallback, useEffect, useState } from "react";
-import { Route, Switch, useLocation } from "react-router-dom";
+import { Route, Switch } from "react-router-dom";
 import "./App.css";
 import { MyWallet, LoanRequestPage } from "./views";
 import { Account, ThemeSwitch, FaucetHint, NetworkSwitch, SiderLayout } from "./components";
@@ -20,7 +19,6 @@ import externalContracts from "./contracts/external_contracts";
 import deployedContracts from "./contracts/hardhat_contracts.json";
 import { Transactor, Web3ModalSetup } from "./helpers";
 import { useStaticJsonRPC } from "./hooks";
-import stakingTokenAbi from "./contracts/StakingToken.json";
 
 // 目標：[React] 知道 react-router-dom 怎麼切換路由（route、url），切換了路由畫面為什麼會變（Ln. 210）
 
@@ -43,7 +41,6 @@ function App(props) {
   const [injectedProvider, setInjectedProvider] = useState();
   const [address, setAddress] = useState();
   const [selectedNetwork, setSelectedNetwork] = useState(networkOptions[0]);
-  const location = useLocation();
   const targetNetwork = NETWORKS[selectedNetwork];
   const blockExplorer = targetNetwork.blockExplorer;
   const localProvider = useStaticJsonRPC([
@@ -59,16 +56,10 @@ function App(props) {
     userSigner && userSigner.provider && userSigner.provider._network && userSigner.provider._network.chainId;
   const tx = Transactor(userSigner, gasPrice);
   const yourLocalBalance = useBalance(localProvider, address);
-  const yourMainnetBalance = useBalance(mainnetProvider, address);
+  // 跟 contracts 互動的相關 functions
   const contractConfig = { deployedContracts: deployedContracts || {}, externalContracts: externalContracts || {} };
   const readContracts = useContractLoader(localProvider, contractConfig);
   const writeContracts = useContractLoader(userSigner, contractConfig, localChainId);
-  const mainnetContracts = useContractLoader(mainnetProvider, contractConfig);
-  const purpose = useContractReader(readContracts, "YourContract", "purpose");
-  const myMainnetDAIBalance = useContractReader(mainnetContracts, "DAI", "balanceOf", [
-    "0x34aA3F359A9D614239015126635CE7732c18fDF3",
-  ]);
-  const faucetAvailable = localProvider && localProvider.connection && targetNetwork.name.indexOf("local") !== -1;
 
   if (DEBUG) console.log(`Using ${selectedNetwork} network`);
   if (DEBUG) console.log("📡 Connecting to Mainnet Ethereum");
@@ -117,47 +108,7 @@ function App(props) {
       loadWeb3Modal();
     }
   }, [loadWeb3Modal]);
-
-  const contractAddr = "0x72b992Beb7D588C6Fe414B237412a5c34669F78c";
-
-  // scaffold-eth
-  const contract = useContract({
-    addressOrName: contractAddr,
-    contractInterface: stakingTokenAbi,
-  });
-  const createLoanFunc = async () => {
-    // const result = await writeContracts(stakingTokenAbi, "0xf57F1239d261Bf27f2332371186BeeAD07c478c0");
-    const result = await contract.createLoan(
-      address,
-      "3",
-      address,
-      "3",
-      "3",
-      "0x1f2b4be39ba309bf7a141e392ba147053c84e127",
-      "0",
-    );
-    console.log("result", result);
-  };
-  // wagmi
-  const [{}, createLoan] = useContractWrite(
-    {
-      addressOrName: contractAddr,
-      contractInterface: stakingTokenAbi,
-      signerOrProvider: localProvider,
-    },
-    "createLoan",
-  );
-  const create = async () => {
-    const result = await createLoan({
-      args: [address, "3", address, "3", "3", "0x1f2b4be39ba309bf7a141e392ba147053c84e127", "0"],
-      overrides: {
-        gasLimit: 203000,
-        gasPrice: 60000000000,
-        value: 1000,
-      },
-    });
-    console.log("result", result);
-  };
+  const createLoanFunc = () => {};
   const UserInfo = () => {
     return (
       <div>
@@ -206,11 +157,17 @@ function App(props) {
   };
   return (
     <SiderLayout extra={<UserInfo />}>
-      <NetworkDisplay />
       {/* react-router-dom 看這邊 */}
       <Switch>
         <Route exact path="/">
-          <MyWallet createLoan={createLoanFunc} />
+          <MyWallet
+            address={address}
+            createLoan={createLoanFunc}
+            writeContracts={writeContracts}
+            readContracts={readContracts}
+            userSigner={userSigner}
+            tx={tx}
+          />
         </Route>
         <Route exact path="/loan-request">
           <LoanRequestPage />
