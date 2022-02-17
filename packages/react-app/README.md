@@ -107,6 +107,9 @@ yarn deploy
 <br/>
 
 ### 5. 打開 localhost:3000 ，成功跑起來了！
+```shell
+yarn start
+```
 
 - but call function error
 <img width="1440" alt="截圖 2022-02-15 下午11 16 48" src="https://user-images.githubusercontent.com/73696750/154172413-57be4334-fc95-4080-b2e8-7d5b7e80c726.png">
