@@ -29,6 +29,12 @@ Logic Function:
 
 # :fire: get start
 
+```shell
+git clone git@github.com:mutualism-project/NFT-Staking.git
+git checkout feat/frontend
+yarn install
+```
+
 ### 1. 改 hardhat.config.js
 
 - before edit
@@ -85,6 +91,11 @@ yarn chain
 
 - 先轉錢給 deployer account
   - 透過 hardhat 預設的註記詞添加小狐狸錢包
+  - Hardhat 測試網路預設的助記詞:
+> http://localhost:8545<br/>
+> chainid: 31337<br/>
+> test test test test test test test test test test test junk<br/>
+  
   - 錢包 localhost:8545 設定 chainId 改成 31337
   - 跑 `yarn accounts` 查看 deployer account address
   - send tx to deployer account address with 0.1 ETH
