@@ -2,7 +2,7 @@ import React from "react";
 import "antd/dist/antd.css";
 import { List } from "antd";
 import { LoanRequestCard } from "../components/LoanRequestCard";
-import { loanRequestMockData } from "../data/mockData";
+import { loanRequestMockData } from "../mockdata/mockData";
 
 // 目標：[React] 如何用現有的 UI library 做 LoanRequest 頁面，顯示假資料的 Request
 
