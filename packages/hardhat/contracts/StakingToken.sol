@@ -46,7 +46,7 @@ contract StakingToken {
     */
     struct LoanData {
         // The current state of a loan
-        LoanStatus loanStatus;
+        LoanStatus status;
 		// An unique id to identify loan
 		uint256 loanID;
         // The wallet address of the borrower
@@ -56,7 +56,7 @@ contract StakingToken {
         // The number of seconds representing relative due date of the loan
         uint256 deadline;
         // The payable currency for the loan principal and interest
-        address payableCurrency;
+        // address payableCurrency;
         // The amount of principal in terms of the payableCurrency
         uint256 principal;
         // The amount of repayment in terms of the payableCurrency
@@ -105,7 +105,7 @@ contract StakingToken {
         uint counter = 0;
         for (uint i = 0; i < loans.length; i++) {
             if (loans[i].borrower == _borrower &&
-                (loans[i].loanStatus == LoanStatus.CREATED || loans[i].loanStatus == LoanStatus.ACTIVE))
+                (loans[i].status == LoanStatus.CREATED || loans[i].status == LoanStatus.ACTIVE))
 			{
                 result[counter] = loans[i];
                 counter++;
@@ -125,8 +125,30 @@ contract StakingToken {
         view
         returns (LoanData memory)
     {
-        require(loans[_loanID].loanStatus != LoanStatus.REMOVED, "The loan was removed.");
+        require(loans[_loanID].status != LoanStatus.REMOVED, "The loan was removed.");
         return loans[_loanID];
+    }
+
+
+    /**
+     * @dev Retrives the biddable loans by status.
+     */
+    function getAllLoanRequests()
+        public
+        view
+        returns (LoanData[] memory)
+    {
+        LoanData[] memory loanRequests = new LoanData[](loans.length);
+        uint256 loanIndex = 0;
+        for(uint i = 0; i < loans.length; i++)
+        {
+            if(loans[i].status == LoanStatus.CREATED || loans[i].status == LoanStatus.ACTIVE)
+            {
+                loanRequests[loanIndex] = loans[i];
+                loanIndex++;
+            }
+        }
+        return (loanRequests);
     }
 
     /**
@@ -140,7 +162,7 @@ contract StakingToken {
     function createLoan(
         // address _borrower,
         uint256 _deadline,
-        address _payableCurrency,
+        // address _payableCurrency,
         uint256 _principal,
         uint256 _repayment, 
         address _nftTokenAddress,
@@ -157,7 +179,7 @@ contract StakingToken {
 				msg.sender,
 				address(0),
 				_deadline,
-				_payableCurrency,
+				// _payableCurrency,
 				_principal,
 				_repayment,
 				_nftTokenAddress,
@@ -172,8 +194,6 @@ contract StakingToken {
         return _nextID;
     }
 
-	// TODO: cancel request
-
     /**
     * @notice An event of removing an existing loan.
     */
@@ -187,7 +207,9 @@ contract StakingToken {
         public
     {
         require(loanToBorrower[_loanID] == msg.sender, "The loan does NOT exist.");
-        loans[_loanID].loanStatus = LoanStatus.REMOVED;
+        LoanData memory loan = loans[_loanID];
+        IERC721(loan.nftTokenAddress).transferFrom(address(this), msg.sender, loan.nftTokenID);
+        loan.status = LoanStatus.REMOVED;
         countOfBorrowerLoan[msg.sender]--;
         emit LoanRemoved(_loanID);
     }
@@ -216,7 +238,7 @@ contract StakingToken {
         countOfLenderLoan[msg.sender]++;
 
         // Set the loan status to ACTIVE.
-        loans[_loanID].loanStatus = LoanStatus.ACTIVE;
+        loans[_loanID].status = LoanStatus.ACTIVE;
 
         emit LoanDealed(_loanID);
     }
@@ -245,7 +267,7 @@ contract StakingToken {
         IERC721(loan.nftTokenAddress).transferFrom(address(this), loan.borrower, loan.nftTokenID);
 
         // change the loan status to REPAID (a terminal state).
-        loans[_loanID].loanStatus = LoanStatus.REPAID;
+        loans[_loanID].status = LoanStatus.REPAID;
 
         emit LoanRepaid(_loanID);
     }
@@ -262,7 +284,7 @@ contract StakingToken {
     {
         // TODO: check the deadline is expired.
         LoanData memory loan = loans[_loanID];
-        IERC721(loan.nftTokenAddress).transferFrom(loan.borrower, loan.lender, loan.nftTokenID);
+        IERC721(loan.nftTokenAddress).transferFrom(address(this), loan.lender, loan.nftTokenID);
         emit collateralClaimed(_loanID);
     }
     
