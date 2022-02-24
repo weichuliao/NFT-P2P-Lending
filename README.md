@@ -1,108 +1,55 @@
-# 🏗 Scaffold-ETH
-
-> everything you need to build on Ethereum! 🚀
-
-🧪 Quickly experiment with Solidity using a frontend that adapts to your smart contract:
-
-![image](https://user-images.githubusercontent.com/2653167/124158108-c14ca380-da56-11eb-967e-69cde37ca8eb.png)
-
-
 # 🏄‍♂️ Quick Start
 
-Prerequisites: [Node](https://nodejs.org/en/download/) plus [Yarn](https://classic.yarnpkg.com/en/docs/install/) and [Git](https://git-scm.com/downloads)
+### 1. Clone and install dependencies:
 
-> clone/fork 🏗 scaffold-eth:
-
-```bash
-git clone https://github.com/scaffold-eth/scaffold-eth.git
+```shell
+git clone git@github.com:mutualism-project/final-project-3.git
+yarn install
 ```
 
-> install and start your 👷‍ Hardhat chain:
+### 2. Generate deployer account:
 
-```bash
-cd scaffold-eth
-yarn install
+如果 `packages/hardhat/` 底下已經有一個地址的 `.txt` 檔案，可以略過此步驟
+
+```shell
+yarn generate
+```
+
+跑完會在 terminal 產生一個 address，在 `packages/hardhat/` 也會產生一個地址的 `.txt` 檔案<br/>
+檔名是一串英文+數字，是 {{deployer account address}}
+
+### 3. Start your 👷‍ Hardhat chain:
+
+```shell
 yarn chain
 ```
 
-> in a second terminal window, start your 📱 frontend:
+### 4. Deploy your contract in a second terminal window:
 
-```bash
-cd scaffold-eth
-yarn start
-```
+> 目前預設網路是 Rinkeby，如果想要部署在本地鏈，修改 `packages/hardhat/hardhat.config.js` 的 defaultNetwork。
 
-> in a third terminal window, 🛰 deploy your contract:
-
-```bash
-cd scaffold-eth
+```shell
 yarn deploy
 ```
 
-🔏 Edit your smart contract `YourContract.sol` in `packages/hardhat/contracts`
+> 此時可能會產生交易失敗：沒有足夠的 gas fee，所以要照著步驟 4.1，用自己的 MetaMask 錢包轉錢到步驟 2. 產生的 deployer account address
+> 記得使用 MetaMask 時，要切換到 Rinkeby 測試網路
 
-📝 Edit your frontend `App.jsx` in `packages/react-app/src`
+### 4-1. Transfer ETH to the deployer account:
 
-💼 Edit your deployment scripts in `packages/hardhat/deploy`
+- deploy on rinkeby:
+  > 小狐狸錢包網路切換到 rinkeby，到水龍頭領錢。<br/>
+  > 錢包發送 0.01ETH 給 deployer account address<br/>
 
-📱 Open http://localhost:3000 to see the app
+- deploy on localhost:
 
-# 📚 Documentation
+  > 將 hardhat 預設的註記詞匯入小狐狸錢包<br/>
+  > Hardhat 測試網路預設的助記詞: <br/> > `test test test test test test test test test test test junk`<br/>
+  > 錢包網路設定 chainId 調整成跟 hardhat chain 一樣，31337<br/>
+  > 錢包發送 0.01ETH 給 deployer account address<br/>
 
-Documentation, tutorials, challenges, and many more resources, visit: [docs.scaffoldeth.io](https://docs.scaffoldeth.io)
+### 5. Start your 📱 frontend in a third terminal window:
 
-# 🔭 Learning Solidity
-
-📕 Read the docs: https://docs.soliditylang.org
-
-📚 Go through each topic from [solidity by example](https://solidity-by-example.org) editing `YourContract.sol` in **🏗 scaffold-eth**
-
-- [Primitive Data Types](https://solidity-by-example.org/primitives/)
-- [Mappings](https://solidity-by-example.org/mapping/)
-- [Structs](https://solidity-by-example.org/structs/)
-- [Modifiers](https://solidity-by-example.org/function-modifier/)
-- [Events](https://solidity-by-example.org/events/)
-- [Inheritance](https://solidity-by-example.org/inheritance/)
-- [Payable](https://solidity-by-example.org/payable/)
-- [Fallback](https://solidity-by-example.org/fallback/)
-
-📧 Learn the [Solidity globals and units](https://solidity.readthedocs.io/en/v0.6.6/units-and-global-variables.html)
-
-# 🛠 Buidl
-
-Check out all the [active branches](https://github.com/scaffold-eth/scaffold-eth/branches/active), [open issues](https://github.com/scaffold-eth/scaffold-eth/issues), and join/fund the 🏰 [BuidlGuidl](https://BuidlGuidl.com)!
-
-  
- - 🚤  [Follow the full Ethereum Speed Run](https://medium.com/@austin_48503/%EF%B8%8Fethereum-dev-speed-run-bd72bcba6a4c)
-
-
- - 🎟  [Create your first NFT](https://github.com/scaffold-eth/scaffold-eth/tree/simple-nft-example)
- - 🥩  [Build a staking smart contract](https://github.com/scaffold-eth/scaffold-eth/tree/challenge-1-decentralized-staking)
- - 🏵  [Deploy a token and vendor](https://github.com/scaffold-eth/scaffold-eth/tree/challenge-2-token-vendor)
- - 🎫  [Extend the NFT example to make a "buyer mints" marketplace](https://github.com/scaffold-eth/scaffold-eth/tree/buyer-mints-nft)
- - 🎲  [Learn about commit/reveal](https://github.com/scaffold-eth/scaffold-eth/tree/commit-reveal-with-frontend)
- - ✍️  [Learn how ecrecover works](https://github.com/scaffold-eth/scaffold-eth/tree/signature-recover)
- - 👩‍👩‍👧‍👧  [Build a multi-sig that uses off-chain signatures](https://github.com/scaffold-eth/scaffold-eth/tree/meta-multi-sig)
- - ⏳  [Extend the multi-sig to stream ETH](https://github.com/scaffold-eth/scaffold-eth/tree/streaming-meta-multi-sig)
- - ⚖️  [Learn how a simple DEX works](https://medium.com/@austin_48503/%EF%B8%8F-minimum-viable-exchange-d84f30bd0c90)
- - 🦍  [Ape into learning!](https://github.com/scaffold-eth/scaffold-eth/tree/aave-ape)
-
-# 💌 P.S.
-
-🌍 You need an RPC key for testnets and production deployments, create an [Alchemy](https://www.alchemy.com/) account and replace the value of `ALCHEMY_KEY = xxx` in `packages/react-app/src/constants.js` with your new key.
-
-# 🏃💨 Speedrun Ethereum
-Register as a builder [here](https://speedrunethereum.com) and start on some of the challenges and build a portfolio.
-
-
-# 💬 Support Chat
-
-Join the telegram [support chat 💬](https://t.me/joinchat/KByvmRe5wkR-8F_zz6AjpA) to ask questions and find others building with 🏗 scaffold-eth!
-
----
-
-🙏 Please check out our [Gitcoin grant](https://gitcoin.co/grants/2851/scaffold-eth) too!
-
-### Automated with Gitpod
-
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#github.com/scaffold-eth/scaffold-eth)
+```shell
+yarn start
+```
