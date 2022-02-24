@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import "antd/dist/antd.css";
-import { List } from "antd";
+import { List, Image, Button } from "antd";
 import { LoanRequestCard } from "../components/LoanRequestCard";
 import { loanRequestMockData } from "../mockdata/mockData";
 import { OPENSEADOMAIN } from "./constance";
+const { ethers } = require("ethers");
 
 // 目標：[React] 如何用現有的 UI library 做 LoanRequest 頁面，顯示假資料的 Request
 
@@ -16,13 +17,12 @@ const LoanRequestPage = ({ address, writeContracts, readContracts, userSigner, t
 
 	const getAllLoanRequests = async () => {
 		const res = await readContracts?.StakingToken?.getAllLoanRequests();
-		console.log(res);
 		if (res) {
 			const doSomethingAsync = async el => {
 				const tokenID = el.nftTokenID.toString();
 				const nftData = await fetch(`${OPENSEADOMAIN.TEST}/asset/${el.nftTokenAddress}/${tokenID}`).then(x => x.json());
 				return {
-					loanId: el.loanID.toString(),
+					loanID: el.loanID.toString(),
 					title: nftData?.asset_contract?.name,
 					image: nftData?.image_preview_url,
 					address: el.nftTokenAddress,
@@ -43,22 +43,23 @@ const LoanRequestPage = ({ address, writeContracts, readContracts, userSigner, t
 		}
 	}
 
-	const handleClick = () => {
-		console.log("handleClick");
+	const handleClick = async targetLoan => {
+		console.log(targetLoan.loanID);
+		console.log(targetLoan.principal);
+		await tx(writeContracts.StakingToken.dealLoan(Number(targetLoan.loanID), { value: ethers.BigNumber.from(targetLoan.principal) }));
   	};
+	  
 	return (
-		// <List
-		// 	itemLayout="vertical"
-		// 	size="large"
-		// />
 		<div>
-			{loans && loans.map(el => {
+			{loans && loans.map((el) => {
 				return (
 					<LoanRequestCard
+						key={el.address.toString()}
+						data={el}
 						image={el.image}
 						title={el.title}
 						address={el.address}
-						loanId={el.loanId}
+						loanID={el.loanID}
 						principal={el.principal}
 						repayment={el.repayment}
 						duration={el.deadline}

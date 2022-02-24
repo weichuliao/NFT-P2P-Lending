@@ -167,11 +167,11 @@ contract StakingToken {
         uint256 _repayment, 
         address _nftTokenAddress,
         uint256 _nftTokenID
-    ) public returns(uint) {
+    ) external returns(uint256) {
         // transfer NFT to contract
         IERC721(_nftTokenAddress).transferFrom(msg.sender, address(this), _nftTokenID);
 
-		uint _nextID = loans.length + 1;
+		uint256 _nextID = loans.length + 1;
         loans.push(
 			LoanData(
 				LoanStatus.CREATED,
@@ -197,18 +197,18 @@ contract StakingToken {
     /**
     * @notice An event of removing an existing loan.
     */
-    event LoanRemoved(uint _loanID);
+    event LoanRemoved(uint256 _loanID);
 
     /**
     * @notice A method for a stakeholder to remove a created loan.
     * @param _loanID The loan chosen to be removed.
     */
-    function removeLoan(uint _loanID)
+    function removeLoan(uint256 _loanID)
         public
     {
-        require(loanToBorrower[_loanID] == msg.sender, "The loan does NOT exist.");
-        LoanData memory loan = loans[_loanID];
-        IERC721(loan.nftTokenAddress).transferFrom(address(this), msg.sender, loan.nftTokenID);
+        // require(loanToBorrower[_loanID] == msg.sender, "The loan does NOT exist.");
+        LoanData storage loan = loans[_loanID];
+        IERC721(loan.nftTokenAddress).transferFrom(address(this), loan.borrower, loan.nftTokenID);
         loan.status = LoanStatus.REMOVED;
         countOfBorrowerLoan[msg.sender]--;
         emit LoanRemoved(_loanID);
@@ -217,16 +217,17 @@ contract StakingToken {
     /**
     * @notice An event of dealing an existing loan.
     */
-    event LoanDealed(uint _loanID);
+    event LoanDealed(uint256 _loanID);
 
     /**
     * @notice
     * @param _loanID The loan chosen to be dealed.
     */
-    function dealLoan(uint _loanID)
-        public
+    function dealLoan(uint256 _loanID)
+        external
+        payable
     {
-        require(loanToBorrower[_loanID] != msg.sender, "You cannot make a deal with your own loan.");
+        // require(loanToBorrower[_loanID] != msg.sender, "You cannot make a deal with your own loan.");
 
         // The lender sends the principal to the borrower.
         // TODO: how to send USDT?
@@ -246,20 +247,21 @@ contract StakingToken {
     /**
     * @notice An event of repaying an existing loan.
     */
-    event LoanRepaid(uint _loanID);
+    event LoanRepaid(uint256 _loanID);
 
     /**
     * @notice A method for a borrower to repay his/her loan.
     * @param _loanID The loan chosen to be repaid.
     */
-    function repayLoan(uint _loanID)
-        public
+    function repayLoan(uint256 _loanID)
+        external
+        payable
     {
         // No one but the borrower can repay his/her loan.
-        require(loanToBorrower[_loanID] == msg.sender, "You cannot repay other's loan.");
+        // require(loanToBorrower[_loanID] == msg.sender, "You cannot repay other's loan.");
 
         // TODO: how to send USDT?
-        LoanData memory loan = loans[_loanID];
+        LoanData storage loan = loans[_loanID];
         (bool sent, ) = payable(loan.lender).call{ value: (loan.principal) }("");
         require(sent, "Failed to repay the loan.");
 
@@ -267,7 +269,7 @@ contract StakingToken {
         IERC721(loan.nftTokenAddress).transferFrom(address(this), loan.borrower, loan.nftTokenID);
 
         // change the loan status to REPAID (a terminal state).
-        loans[_loanID].status = LoanStatus.REPAID;
+        loan.status = LoanStatus.REPAID;
 
         emit LoanRepaid(_loanID);
     }
@@ -275,15 +277,15 @@ contract StakingToken {
     /**
     * @notice An event of claiming borrower's collateral.
     */
-    event collateralClaimed(uint _loanID);
+    event collateralClaimed(uint256 _loanID);
 
     // @notice A method for a lender to claim the collateral.
     // @param _loanID
-    function claimCollateral(uint _loanID)
+    function claimCollateral(uint256 _loanID)
         public
     {
         // TODO: check the deadline is expired.
-        LoanData memory loan = loans[_loanID];
+        LoanData storage loan = loans[_loanID];
         IERC721(loan.nftTokenAddress).transferFrom(address(this), loan.lender, loan.nftTokenID);
         emit collateralClaimed(_loanID);
     }
@@ -304,7 +306,7 @@ contract StakingToken {
     // ) external {
     //     require(block.timestamp < deadline, "Signed transaction expired");
 
-    //     uint chainId;
+    //     uint256 chainId;
     //     assembly {
     //         chainId := chainid
     //     }
@@ -322,7 +324,7 @@ contract StakingToken {
 
     //     bytes32 hashStruct = keccak256(
     //         abi.encode(
-    //             keccak256("set(address borrower,uint principal,uint repayment,address currency,uint deadline,address nft)"),
+    //             keccak256("set(address borrower,uint256 principal,uint256 repayment,address currency,uint256 deadline,address nft)"),
     //             borrower,
     //             principal,
     //             repayment,

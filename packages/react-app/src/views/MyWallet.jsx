@@ -19,7 +19,7 @@ const { ethers } = require("ethers");
 const MyWallet = ({ address, writeContracts, userSigner, tx }) => {
 	const [NFTs, setNFTs] = useState();
 	const [loans, setLoans] = useState();
-	const [loanId, setLoanId] = useState();	// 先觀察一下，好像可以不用
+	const [loanID, setLoanID] = useState();	// 先觀察一下，好像可以不用
 
 	const [priceUnit, setPriceUnit] = useState("ETH");
 	const [principal, setPrincipal] = useState("");
@@ -27,6 +27,7 @@ const MyWallet = ({ address, writeContracts, userSigner, tx }) => {
 	const [duration, setDuration] = useState("");
 
 	const [targetNFT, setTargetNFT] = useState();
+	const [targetLoan, setTargetLoan] = useState();
 
 	const [isConfirming, setIsConfirming] = useState(false);
 	const [isConfirmed, setIsConfirmed] = useState(false);
@@ -63,12 +64,13 @@ const MyWallet = ({ address, writeContracts, userSigner, tx }) => {
 
 	const getLoansOf = async borrower => {
 		const res = await writeContracts?.StakingToken?.getLoansOf(borrower);
+		console.log(res)
 		if (res) {
 			const doSomethingAsync = async el => {
 				const tokenID = el.nftTokenID.toString();
 				const nftData = await fetch(`${OPENSEADOMAIN.TEST}/asset/${el.nftTokenAddress}/${tokenID}`).then(x => x.json());
 				return {
-					loanId: el.loanID.toString(),
+					loanID: el.loanID.toString(),
 					title: nftData?.asset_contract?.name,
 					image: nftData?.image_preview_url,
 					address: el.nftTokenAddress,
@@ -85,12 +87,16 @@ const MyWallet = ({ address, writeContracts, userSigner, tx }) => {
 				const item = await job();
 				myData.push(item);
 			}
+			console.log(myData);
 			setLoans(myData);
 		}
 		return;
 	};
 
 	const createLoan = async () => {
+		console.log(
+			`principal: ${priceUnit} ${principal}, repayment: ${priceUnit}${repayment}, duration: ${Number(duration) * 60 * 60 * 24}}, nft address: ${targetNFT.address}, nft token: ${targetNFT.tokenID}`,
+		);
 		const nftTokenAddress = targetNFT?.address;
 		const nftTokenID = Number(targetNFT?.tokenID);
 
@@ -111,7 +117,7 @@ const MyWallet = ({ address, writeContracts, userSigner, tx }) => {
 				nftTokenAddress,
 				nftTokenID,
 			),
-		).then(loanId => setLoanId(loanId));
+		).then(loanID => setLoanID(loanID));
 		setIsConfirming(false);
 
 		// 要 close modal
@@ -119,7 +125,8 @@ const MyWallet = ({ address, writeContracts, userSigner, tx }) => {
 	};
 
 	const cancelLoanRequest = async loanID => {
-		await tx(writeContracts.StakingToken.removeLoan(Number(loanId)));
+		// console.log(targetLoan.loanID);
+		await tx(writeContracts.StakingToken.removeLoan(Number(loanID)));
 	}
 
 	const handleOnSubmit = () => {
@@ -141,9 +148,9 @@ const MyWallet = ({ address, writeContracts, userSigner, tx }) => {
 			flexWrap: "wrap",
 			}}
 		>
-			{NFTs && NFTs.map(ele => {
+			{NFTs && NFTs.map((ele) => {
 				return (
-					<MyCard data={ele} type={"NFT"}>
+					<MyCard key={ele.address.toString()} data={ele} type={"NFT"}>
 						<Button
 							type="primary"
 							onClick={() => {
@@ -156,9 +163,9 @@ const MyWallet = ({ address, writeContracts, userSigner, tx }) => {
 					</MyCard>
 				);
 			})}
-			{loans && loans.map(ele => {
+			{loans && loans.map((ele) => {
 				return (
-					<MyCard data={ele} type={"loan"}>
+					<MyCard key={ele.address.toString()} data={ele} type={"loan"}>
 						<Button
 							type="primary"
 							onClick={() => cancelLoanRequest(ele.loanID)}

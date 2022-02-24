@@ -13,7 +13,7 @@ const { ethers } = require("ethers");
 //  （可以看 'src/views/LoanRequest.jsx'）
 //  2. 三個 Info 結構都一樣，只有 title 跟 description 不一樣所以就將這兩個直當作參數傳入
 
-const NFTInfo = ({ title, address, loanId }) => {
+const NFTInfo = ({ title, address, loanID }) => {
 	return (
 		<div
 		style={{
@@ -26,7 +26,7 @@ const NFTInfo = ({ title, address, loanId }) => {
 		>
 		<h5>{title}</h5>
 		<p>by: {address}</p>
-		<p>Loan ID: {loanId}</p>
+		<p>Loan ID: {loanID}</p>
 		</div>
 	);
 };
@@ -40,29 +40,29 @@ const Info = ({ title, description }) => {
 	);
 };
 
-export const LoanRequestCard = ({ image, title, address, loanId, principal, repayment, duration, onClick }) => {
+export const LoanRequestCard = ({ data, image, title, address, loanID, principal, repayment, duration, onClick }) => {
 	return (
 		<div
-		key={image}
-		style={{
-			width: "100%",
-			display: "flex",
-			backgroundColor: "white",
-			height: "120px",
-			margin: "1rem 0",
-			padding: "1rem",
-			alignItems: "center",
-			justifyContent: "space-between",
-		}}
+			key={image}
+			style={{
+				width: "100%",
+				display: "flex",
+				backgroundColor: "white",
+				height: "120px",
+				margin: "1rem 0",
+				padding: "1rem",
+				alignItems: "center",
+				justifyContent: "space-between",
+			}}
 		>
-		<Image width={100} src={image} />
-		<NFTInfo title={title} address={address} loanId={loanId} />
-		<Info title={ethers.utils.formatEther(principal)} description="Principal" />
-		<Info title={ethers.utils.formatEther(repayment)} description="Repayment" />
-		<Info title={Number(duration) / 60 / 60 / 24 + " month"} description="Duration" />
-		<Button type="primary" onClick={onClick}>
-			Deal
-		</Button>
+			<Image width={100} src={image} />
+			<NFTInfo title={title} address={address} loanID={loanID} />
+			<Info title={ethers.utils.formatEther(principal)} description="Principal" />
+			<Info title={ethers.utils.formatEther(repayment)} description="Repayment" />
+			<Info title={Number(duration) / 60 / 60 / 24 + " month"} description="Duration" />
+			<Button type="primary" onClick={() => onClick(data)}>
+				Deal
+			</Button>
 		</div>
 	);
 };

@@ -205,14 +205,14 @@ function App(props) {
 		{/* react-router-dom 看這邊 */}
 		<Switch>
 			<Route exact path="/">
-			<MyWallet
-				address={address}
-				// createLoan={createLoanFunc}
-				writeContracts={writeContracts}
-				readContracts={readContracts}
-				userSigner={userSigner}
-				tx={tx}
-			/>
+				<MyWallet
+					address={address}
+					// createLoan={createLoanFunc}
+					writeContracts={writeContracts}
+					readContracts={readContracts}
+					userSigner={userSigner}
+					tx={tx}
+				/>
 			</Route>
 			<Route exact path="/loan-request">
 				<LoanRequestPage
