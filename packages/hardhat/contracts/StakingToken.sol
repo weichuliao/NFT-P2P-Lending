@@ -142,13 +142,13 @@ contract StakingToken {
         uint256 loanIndex = 0;
         for(uint i = 0; i < loans.length; i++)
         {
-            if(loans[i].status == LoanStatus.CREATED || loans[i].status == LoanStatus.ACTIVE)
+            if (loans[i].status == LoanStatus.CREATED || loans[i].status == LoanStatus.ACTIVE)
             {
                 loanRequests[loanIndex] = loans[i];
                 loanIndex++;
             }
         }
-        return (loanRequests);
+        return loanRequests;
     }
 
     /**
@@ -160,9 +160,7 @@ contract StakingToken {
     // @param _parameter Please refer to the struct of Loan.
     // @return The ID of the loan created.
     function createLoan(
-        // address _borrower,
         uint256 _deadline,
-        // address _payableCurrency,
         uint256 _principal,
         uint256 _repayment, 
         address _nftTokenAddress,
@@ -171,27 +169,23 @@ contract StakingToken {
         // transfer NFT to contract
         IERC721(_nftTokenAddress).transferFrom(msg.sender, address(this), _nftTokenID);
 
-		uint256 _nextID = loans.length + 1;
-        loans.push(
-			LoanData(
-				LoanStatus.CREATED,
-				_nextID,
-				msg.sender,
-				address(0),
-				_deadline,
-				// _payableCurrency,
-				_principal,
-				_repayment,
-				_nftTokenAddress,
-				_nftTokenID
-			)
-		);
+		LoanData memory newLoan;
+        newLoan.status = LoanStatus.CREATED;
+        newLoan.loanID = loans.length;
+        newLoan.borrower = msg.sender;
+        newLoan.lender = address(0);
+        newLoan.deadline = _deadline;
+        newLoan.principal = _principal;
+        newLoan.repayment = _repayment;
+        newLoan.nftTokenAddress = _nftTokenAddress;
+        newLoan.nftTokenID = _nftTokenID;
+        loans.push(newLoan);
 
-        loanToBorrower[_nextID] = msg.sender;
+        loanToBorrower[newLoan.loanID] = msg.sender;
         countOfBorrowerLoan[msg.sender]++;
 
-        emit NewLoan(_nextID, _nftTokenAddress, _nftTokenID);
-        return _nextID;
+        emit NewLoan(newLoan.loanID, _nftTokenAddress, _nftTokenID);
+        return newLoan.loanID;
     }
 
     /**

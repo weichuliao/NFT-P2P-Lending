@@ -41,29 +41,81 @@ const Info = ({ title, description }) => {
 };
 
 export const LoanRequestCard = ({ data, image, title, address, loanID, principal, repayment, duration, onClick }) => {
-	return (
-		<div
-			key={image}
-			style={{
-				width: "100%",
-				display: "flex",
-				backgroundColor: "white",
-				height: "120px",
-				margin: "1rem 0",
-				padding: "1rem",
-				alignItems: "center",
-				justifyContent: "space-between",
-			}}
-		>
-			<Image width={100} src={image} />
-			<NFTInfo title={title} address={address} loanID={loanID} />
-			<Info title={ethers.utils.formatEther(principal)} description="Principal" />
-			<Info title={ethers.utils.formatEther(repayment)} description="Repayment" />
-			<Info title={Number(duration) / 60 / 60 / 24 + " month"} description="Duration" />
-			<Button type="primary" onClick={() => onClick(data)}>
-				Deal
-			</Button>
-		</div>
-	);
+	if (data.status == "0") {
+		return (
+			<div
+				key={image}
+				style={{
+					width: "100%",
+					display: "flex",
+					backgroundColor: "white",
+					height: "120px",
+					margin: "1rem 0",
+					padding: "1rem",
+					alignItems: "center",
+					justifyContent: "space-between",
+				}}
+			>
+				<Image width={100} src={image} />
+				<NFTInfo title={title} address={address} loanID={loanID} />
+				<Info title={ethers.utils.formatEther(principal)} description="Principal" />
+				<Info title={ethers.utils.formatEther(repayment)} description="Repayment" />
+				<Info title={Number(duration) / 60 / 60 / 24 + " month"} description="Duration" />
+				<Button type="primary" disabled>
+					Cancelled
+				</Button>
+			</div>
+		);
+	} else if (data.status == "3") {
+		return (
+			<div
+				key={image}
+				style={{
+					width: "100%",
+					display: "flex",
+					backgroundColor: "white",
+					height: "120px",
+					margin: "1rem 0",
+					padding: "1rem",
+					alignItems: "center",
+					justifyContent: "space-between",
+				}}
+			>
+				<Image width={100} src={image} />
+				<NFTInfo title={title} address={address} loanID={loanID} />
+				<Info title={ethers.utils.formatEther(principal)} description="Principal" />
+				<Info title={ethers.utils.formatEther(repayment)} description="Repayment" />
+				<Info title={Number(duration) / 60 / 60 / 24 + " month"} description="Duration" />
+				<Button type="primary" disabled>
+					Dealed
+				</Button>
+			</div>
+		);
+	} else {
+		return (
+			<div
+				key={image}
+				style={{
+					width: "100%",
+					display: "flex",
+					backgroundColor: "white",
+					height: "120px",
+					margin: "1rem 0",
+					padding: "1rem",
+					alignItems: "center",
+					justifyContent: "space-between",
+				}}
+			>
+				<Image width={100} src={image} />
+				<NFTInfo title={title} address={address} loanID={loanID} />
+				<Info title={ethers.utils.formatEther(principal)} description="Principal" />
+				<Info title={ethers.utils.formatEther(repayment)} description="Repayment" />
+				<Info title={Number(duration) / 60 / 60 / 24 + " month"} description="Duration" />
+				<Button type="primary" onClick={() => onClick(data)}>
+					Deal
+				</Button>
+			</div>
+		);
+	}
 };
 export default LoanRequestCard;

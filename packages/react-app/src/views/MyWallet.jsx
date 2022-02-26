@@ -57,19 +57,22 @@ const MyWallet = ({ address, writeContracts, userSigner, tx }) => {
 					image: el.image_preview_url,
 					address: el.asset_contract.address,
 					tokenID: el.token_id,
-            }));
-		});
+            	}));
+			}
+		);
 		if (NFTs) setNFTs(NFTs);
 	};
 
 	const getLoansOf = async borrower => {
 		const res = await writeContracts?.StakingToken?.getLoansOf(borrower);
-		console.log(res)
+		console.log("My wallet getLoansOf");
+		console.log(res);
 		if (res) {
 			const doSomethingAsync = async el => {
 				const tokenID = el.nftTokenID.toString();
 				const nftData = await fetch(`${OPENSEADOMAIN.TEST}/asset/${el.nftTokenAddress}/${tokenID}`).then(x => x.json());
 				return {
+					status: el.status.toString(),
 					loanID: el.loanID.toString(),
 					title: nftData?.asset_contract?.name,
 					image: nftData?.image_preview_url,
@@ -125,8 +128,13 @@ const MyWallet = ({ address, writeContracts, userSigner, tx }) => {
 	};
 
 	const cancelLoanRequest = async loanID => {
-		// console.log(targetLoan.loanID);
+		console.log("Cancel Loan: " + loanID);
 		await tx(writeContracts.StakingToken.removeLoan(Number(loanID)));
+	}
+
+	const repayLoanRequest = async targetLoan => {
+		console.log("Repay Loan: " + targetLoan.loanID);
+		await tx(writeContracts.StakingToken.repayLoan(Number(targetLoan.loanID), { value: ethers.BigNumber.from(targetLoan.principal) }));
 	}
 
 	const handleOnSubmit = () => {
@@ -150,7 +158,7 @@ const MyWallet = ({ address, writeContracts, userSigner, tx }) => {
 		>
 			{NFTs && NFTs.map((ele) => {
 				return (
-					<MyCard key={ele.address.toString()} data={ele} type={"NFT"}>
+					<MyCard key={ele.token_id} data={ele} type={"NFT"}>
 						<Button
 							type="primary"
 							onClick={() => {
@@ -164,16 +172,29 @@ const MyWallet = ({ address, writeContracts, userSigner, tx }) => {
 				);
 			})}
 			{loans && loans.map((ele) => {
-				return (
-					<MyCard key={ele.address.toString()} data={ele} type={"loan"}>
-						<Button
-							type="primary"
-							onClick={() => cancelLoanRequest(ele.loanID)}
-						>
-							Cancel Loan Request
-						</Button>
-					</MyCard>
-				);
+				if (ele.status == "3") {
+					return (
+						<MyCard key={ele.token_id} data={ele} type={"loan"}>
+							<Button
+								type="primary"
+								onClick={() => repayLoanRequest(ele)}
+							>
+								Repay Loan
+							</Button>
+						</MyCard>
+					);
+				} else {
+					return (
+						<MyCard key={ele.address.toString()} data={ele} type={"loan"}>
+							<Button
+								type="primary"
+								onClick={() => cancelLoanRequest(ele.loanID)}
+							>
+								Cancel Loan Request
+							</Button>
+						</MyCard>
+					);
+				}
 			})}
 		</div>
 		{/* 彈窗開關由 <Button> Create Loan Request </Button> 的 onClick={() => setIsModalVisible(true)} 控制 */}

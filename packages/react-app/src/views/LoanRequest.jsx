@@ -17,11 +17,14 @@ const LoanRequestPage = ({ address, writeContracts, readContracts, userSigner, t
 
 	const getAllLoanRequests = async () => {
 		const res = await readContracts?.StakingToken?.getAllLoanRequests();
+		console.log("LoanRequest getAllLoanRequests");
+		console.log(res);
 		if (res) {
 			const doSomethingAsync = async el => {
 				const tokenID = el.nftTokenID.toString();
 				const nftData = await fetch(`${OPENSEADOMAIN.TEST}/asset/${el.nftTokenAddress}/${tokenID}`).then(x => x.json());
 				return {
+					status: el.status.toString(),
 					loanID: el.loanID.toString(),
 					title: nftData?.asset_contract?.name,
 					image: nftData?.image_preview_url,
@@ -54,7 +57,6 @@ const LoanRequestPage = ({ address, writeContracts, readContracts, userSigner, t
 			{loans && loans.map((el) => {
 				return (
 					<LoanRequestCard
-						key={el.address.toString()}
 						data={el}
 						image={el.image}
 						title={el.title}
