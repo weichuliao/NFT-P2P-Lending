@@ -27,7 +27,7 @@ const SiderMenu = ({ extra, children }) => {
           }}
         >
           <img src="cuterDao.png" alt="logo" style={{ width: "80px" }} />
-          <p>CuterDAO</p>
+          <p>CutterDAO</p>
         </div>
         <Menu theme="light" defaultSelectedKeys={["1"]} mode="inline">
           <Menu.Item key="1" icon={<PieChartOutlined />}>
@@ -46,7 +46,7 @@ const SiderMenu = ({ extra, children }) => {
           extra={extra}
         />
         <Layout.Content style={{ margin: "16px" }}>{children}</Layout.Content>
-        <Layout.Footer style={{ textAlign: "center" }}>©2022 Created by CuterDAO</Layout.Footer>
+        <Layout.Footer style={{ textAlign: "center" }}>©2022 Created by CutterDAO</Layout.Footer>
       </Layout>
     </Layout>
   );
