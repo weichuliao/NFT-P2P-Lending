@@ -134,7 +134,7 @@ contract StakingToken {
      * @dev Retrives the biddable loans by status.
      */
     function getAllLoanRequests()
-        public
+        external
         view
         returns (LoanData[] memory)
     {

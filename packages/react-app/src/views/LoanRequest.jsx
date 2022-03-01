@@ -57,6 +57,7 @@ const LoanRequestPage = ({ address, writeContracts, readContracts, userSigner, t
 			{loans && loans.map((el) => {
 				return (
 					<LoanRequestCard
+						key={el.tokenID}
 						data={el}
 						image={el.image}
 						title={el.title}

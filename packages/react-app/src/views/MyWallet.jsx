@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Button } from "antd";
+import { Modal, Button, LoadingOutlined } from "antd";
 import MyCard from "../components/MyCard";
 import SelectBox from "../components/SelectBox";
 import DurationBox from "../components/DurationBox";
@@ -29,8 +29,8 @@ const MyWallet = ({ address, writeContracts, userSigner, tx }) => {
 	const [targetNFT, setTargetNFT] = useState();
 	const [targetLoan, setTargetLoan] = useState();
 
+	const [isApproving, setIsApproving] = useState(false);
 	const [isConfirming, setIsConfirming] = useState(false);
-	const [isConfirmed, setIsConfirmed] = useState(false);
 	const [isModalVisible, setIsModalVisible] = useState(false);
 	const verifySubmit = principal !== "" && repayment !== "" && duration !== "" && NFTs !== null; // 控制彈窗的 ok button 能不能按
 
@@ -97,20 +97,22 @@ const MyWallet = ({ address, writeContracts, userSigner, tx }) => {
 	};
 
 	const createLoan = async () => {
+		// for debug: log 出來看跟輸入的是否一樣
 		console.log(
 			`principal: ${priceUnit} ${principal}, repayment: ${priceUnit}${repayment}, duration: ${Number(duration) * 60 * 60 * 24}}, nft address: ${targetNFT.address}, nft token: ${targetNFT.tokenID}`,
 		);
+
 		const nftTokenAddress = targetNFT?.address;
 		const nftTokenID = Number(targetNFT?.tokenID);
 
 		// approve for transfer NFT
-		setIsConfirming(true);
+		setIsApproving(true);
 		const nftContract = await new ethers.Contract(nftTokenAddress, ERC721.abi, userSigner);
 		let approveTransaction = await nftContract.approve(writeContracts.StakingToken.address, Number(nftTokenID));
 		await approveTransaction.wait();
-		setIsConfirming(false);
-		setIsConfirmed(true);
+		setIsApproving(false);
 
+		setIsConfirming(true);
 		await tx(
 			writeContracts.StakingToken.createLoan(
 				// address,
@@ -136,14 +138,6 @@ const MyWallet = ({ address, writeContracts, userSigner, tx }) => {
 		console.log("Repay Loan: " + targetLoan.loanID);
 		await tx(writeContracts.StakingToken.repayLoan(Number(targetLoan.loanID), { value: ethers.BigNumber.from(targetLoan.principal) }));
 	}
-
-	const handleOnSubmit = () => {
-		createLoan();
-		// for debug: log 出來看跟輸入的是否一樣
-		console.log(
-			`principal: ${priceUnit} ${principal}, repayment: ${priceUnit}${repayment}, duration: ${duration}`,
-		);
-	};
 
 	return (
 		<>
@@ -185,7 +179,7 @@ const MyWallet = ({ address, writeContracts, userSigner, tx }) => {
 					);
 				} else {
 					return (
-						<MyCard key={ele.address.toString()} data={ele} type={"loan"}>
+						<MyCard key={ele.token_id} data={ele} type={"loan"}>
 							<Button
 								type="primary"
 								onClick={() => cancelLoanRequest(ele.loanID)}
@@ -204,9 +198,16 @@ const MyWallet = ({ address, writeContracts, userSigner, tx }) => {
 			visible={isModalVisible}
 			width={800}
 			okButtonProps={{ disabled: !verifySubmit }}
-			onOk={handleOnSubmit}
+			onOk={() => createLoan()}
 			onCancel={() => setIsModalVisible(false)}
-			okText={isConfirming ? "Confirming..." : "Confirmed"}
+			footer={[
+				<Button key="cancel" onClick={() => setIsModalVisible(false)}>
+					Cancel
+				</Button>,
+				<Button key="confirm" type="primary" loading={isApproving || isConfirming} onClick={() => createLoan()}>
+					{(isApproving && !isConfirming ? "Approving" : "Confirm") || (!isApproving && isConfirming ? "Confirm" : "Confirming")}
+				</Button>
+			]}
 		>
 			<SelectBox
 				inputOnChange={e => setPrincipal(e)}
