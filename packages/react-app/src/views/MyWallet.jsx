@@ -136,7 +136,7 @@ const MyWallet = ({ address, writeContracts, userSigner, tx }) => {
 
 	const repayLoanRequest = async targetLoan => {
 		console.log("Repay Loan: " + targetLoan.loanID);
-		await tx(writeContracts.StakingToken.repayLoan(Number(targetLoan.loanID), { value: ethers.BigNumber.from(targetLoan.principal) }));
+		await tx(writeContracts.StakingToken.repayLoan(Number(targetLoan.loanID), { value: ethers.BigNumber.from(targetLoan.repayment) }));
 	}
 
 	return (
