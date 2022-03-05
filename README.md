@@ -3,7 +3,7 @@
 ### 1. Clone and install dependencies:
 
 ```shell
-git clone git@github.com:mutualism-project/final-project-3.git
+git clone https://github.com/weichuliao/NFT-P2P-Lending.git
 yarn install
 ```
 
